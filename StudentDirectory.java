@@ -46,7 +46,9 @@ public class StudentDirectory {
     }
     
     public void addStudents(Collection<Student> students) {
-    	students.addAll(students);
+    	int oldSize = this.students.size();
+    	this.students.addAll(students);
+    	reapplyHistory(oldSize - 1); 
     }
     
     private void generateStudents(List<String> demand, List<String> history, List<String> info) {
@@ -74,9 +76,10 @@ public class StudentDirectory {
     	for(int i = 1; i < history.size(); i++) {
     		String[] courseStrings = history.get(i).split(",");
     		int studentNumber = Integer.parseInt(courseStrings[0]) - 1;
-    		int courseNumber = Integer.parseInt(courseStrings[1]) - 1;
-    		
-    		students.get(studentNumber).addTakenCourse(courseNumber, catalog.getCourse(courseNumber));
+    		if(studentNumber < students.size()) {
+    			int courseNumber = Integer.parseInt(courseStrings[1]) - 1;
+    			students.get(studentNumber).addTakenCourse(courseNumber, catalog.getCourse(courseNumber));
+    		}
     	}
     	
     	for(int i = 1; i < info.size(); i++) {
@@ -84,12 +87,28 @@ public class StudentDirectory {
     		String roleId = infoStrings[5];
     		if("5".equals(roleId)) {
     			int id = Integer.parseInt(infoStrings[0]) - 1;
-    			String firstName = infoStrings[1];
-    			String lastName = infoStrings[2];
-    			students.get(id).setName(firstName + " " +  lastName);
+    			if(id < students.size()) {
+    				String firstName = infoStrings[1];
+    				String lastName = infoStrings[2];
+    				students.get(id).setName(firstName + " " +  lastName);
+    			}
     		}
     	}
-    	
+    }
+    
+    private void reapplyHistory(int oldSize) {
+    	try {
+			List<String> history = Files.readAllLines(Paths.get(PATH_STUDENT_HISTORY));
+			CourseCatalog catalog = CourseCatalog.getInstance();
+			for(int i = 1; i < history.size() && i < students.size(); i++) {
+	    		String[] courseStrings = history.get(i).split(",");
+	    		int studentNumber = Integer.parseInt(courseStrings[0]) - 1;
+	    		if(studentNumber > oldSize) {
+	    			int courseNumber = Integer.parseInt(courseStrings[1]) - 1;
+	    			students.get(studentNumber).addTakenCourse(courseNumber, catalog.getCourse(courseNumber));
+	    		}
+	    	}
+		} catch (IOException ignored) {}
     }
     
 }
